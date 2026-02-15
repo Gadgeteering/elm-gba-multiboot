@@ -1,10 +1,11 @@
 port module Main exposing (..)
-
+import String exposing (..)
 import Json.Decode exposing (..)
 import Platform exposing (..)
 import Bitwise exposing (..)
 import Time exposing (..)
 import List exposing (..)
+
 
 
 {- Elm-Arduino-GBA-Multiboot-Cable! (by Andre Taulien)
@@ -154,7 +155,7 @@ stateLoadRom msg model =
                         , rom = Ok rom
                       }
                     , Cmd.batch
-                        [ port_write_console ("Loaded ROM-File (" ++ (toString (length rom)) ++ " bytes)")
+                        [ port_write_console ("Loaded ROM-File (" ++ String.fromInt(List.length rom) ++ " bytes)")
                         , port_write_console "Waiting for arduino to boot now..."
                         , port_initalize_serial_port serialport
                         ]
@@ -200,14 +201,14 @@ stateWaitForArduino msg model =
                             , Cmd.batch
                                 [ port_write_console "Arduino connected!"
                                 , Cmd.batch
-                                    [ port_write_serial ((int32ToByteList (length data)) ++ (List.take 0xC0 data))
+                                    [ port_write_serial ((int32ToByteList (List.length data)) ++ (List.take 0xC0 data))
                                     , port_write_console "Sending header..."
                                     ]
                                 ]
                             )
 
                 _ ->
-                    ( model, port_write_console ("Invalid command: " ++ (toString cmd)) )
+                    ( model, port_write_console ("Invalid command: " ++ (Debug.toString cmd)) )
 
         _ ->
             ( model, Cmd.none )
@@ -246,7 +247,7 @@ stateTransferRom msg model =
                             )
 
                 _ ->
-                    ( model, port_write_console ("Invalid command: " ++ (toString cmd)) )
+                    ( model, port_write_console ("Invalid command: " ++ (Debug.toString cmd)) )
 
         _ ->
             ( model, Cmd.none )
@@ -322,9 +323,10 @@ subscriptions model =
             Sub.none
 
 
+main : Program () Model Msg
 main =
-    Platform.program
-        { init = init
+    Platform.worker
+        { init = \() -> init
         , update = update
         , subscriptions = subscriptions
         }
