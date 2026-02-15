@@ -4,11 +4,16 @@
  * By Andre Taulien (2018)
  */
 
-var SerialPort = require('serialport');
-var fs = require('fs')
+var { SerialPort } = require('serialport');
 
-Elm = require("elm-flash");
-var app = Elm.Main.worker()
+
+const fs = require('fs');
+const elmCode = fs.readFileSync('./node_modules/elm-flash.js', 'utf8');
+eval(elmCode); 
+
+// Now you can call it directly:
+var app = require('./node_modules/elm-flash.js').Elm.Main.init();
+
 var serial = null;
 
 remove_commands = function(s) {
@@ -51,7 +56,8 @@ on_serial_data = function(data) {
 
 
 app.ports.port_initalize_serial_port.subscribe(function(args) {
-  serial = new SerialPort(args, {
+  serial = new SerialPort({
+    path: args,
     baudRate: 57600,
     databits: 8,
     parity: 'none',
@@ -77,8 +83,12 @@ app.ports.port_write_console.subscribe(function(args) {
   console.log("Elm: " + args);
 });
 
-app.ports.port_write_stdout.subscribe(function(args) {
-  process.stdout.write(args);
-});
+if (app.ports && app.ports.port_write_stdout) {
+    app.ports.port_write_stdout.subscribe(function(args) {
+        process.stdout.write(args);
+    });
+} else {
+    console.warn("Warning: port_write_stdout not found in Elm app.");
+}
 
 app.ports.port_on_program_config.send(process.argv.slice(2));
